@@ -1,0 +1,161 @@
+<div id="skaldr_panel" class="skaldr-panel skaldr-hidden" role="dialog" aria-label="SKALDR">
+    <div class="skaldr-header" data-skaldr-drag>
+        <div class="skaldr-title">
+            <span class="skaldr-rune">ᛊ</span>
+            <span class="skaldr-title-text">SKALDR</span>
+        </div>
+        <div class="skaldr-header-actions">
+            <div class="skaldr-icon-btn" data-skaldr-action="toggle-settings"
+                 data-skaldr-i18n-title="panel.settings" tabindex="0" role="button">
+                <i class="fa-solid fa-gear"></i>
+            </div>
+            <div class="skaldr-icon-btn" data-skaldr-action="close"
+                 data-skaldr-i18n-title="panel.close" tabindex="0" role="button">
+                <i class="fa-solid fa-xmark"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="skaldr-body">
+        <!-- ОСНОВНОЙ ВИД -->
+        <div class="skaldr-view" data-skaldr-view="main">
+            <div class="skaldr-block">
+                <div class="skaldr-label" data-skaldr-i18n="main.style">Style</div>
+                <div class="skaldr-styles" data-skaldr-styles></div>
+            </div>
+
+            <div class="skaldr-block skaldr-grow">
+                <div class="skaldr-label-row">
+                    <span class="skaldr-label" data-skaldr-i18n="main.source">Source</span>
+                    <div class="skaldr-mini-btn" data-skaldr-action="pull"
+                         data-skaldr-i18n-title="main.pull" tabindex="0" role="button">
+                        <i class="fa-solid fa-arrow-down-to-line"></i>
+                    </div>
+                </div>
+                <textarea class="skaldr-textarea" data-skaldr-source rows="4"
+                          data-skaldr-i18n-placeholder="main.sourcePlaceholder"></textarea>
+            </div>
+
+            <div class="skaldr-actions">
+                <div class="skaldr-btn skaldr-btn-primary" data-skaldr-action="generate" tabindex="0" role="button">
+                    <i class="fa-solid fa-fire-flame-curved"></i>
+                    <span data-skaldr-btn-label data-skaldr-i18n="main.skal">SKÁL!</span>
+                </div>
+            </div>
+
+            <div class="skaldr-block skaldr-grow">
+                <div class="skaldr-label-row">
+                    <span class="skaldr-label" data-skaldr-i18n="main.result">Result</span>
+                    <div class="skaldr-mini-btn" data-skaldr-action="copy"
+                         data-skaldr-i18n-title="main.copy" tabindex="0" role="button">
+                        <i class="fa-solid fa-copy"></i>
+                    </div>
+                </div>
+                <textarea class="skaldr-textarea" data-skaldr-result rows="4"
+                          data-skaldr-i18n-placeholder="main.resultPlaceholder"></textarea>
+            </div>
+
+            <div class="skaldr-actions">
+                <div class="skaldr-btn skaldr-btn-accent" data-skaldr-action="apply"
+                     data-skaldr-i18n-title="main.ristaHint" tabindex="0" role="button">
+                    <i class="fa-solid fa-pen-nib"></i>
+                    <span data-skaldr-i18n="main.rista">RÍSTA!</span>
+                </div>
+            </div>
+
+            <div class="skaldr-status" data-skaldr-status></div>
+        </div>
+
+        <!-- НАСТРОЙКИ -->
+        <div class="skaldr-view skaldr-hidden" data-skaldr-view="settings">
+            <div class="skaldr-block">
+                <div class="skaldr-label-row">
+                    <span class="skaldr-label" data-skaldr-i18n="settings.connection">Connection</span>
+                    <div class="skaldr-mini-btn" data-skaldr-action="refresh-profiles"
+                         data-skaldr-i18n-title="settings.refresh" tabindex="0" role="button">
+                        <i class="fa-solid fa-rotate"></i>
+                    </div>
+                </div>
+                <select class="skaldr-select" data-skaldr-connection></select>
+                <div class="skaldr-hint" data-skaldr-i18n="settings.connectionHint"></div>
+                <div class="skaldr-warn skaldr-hidden" data-skaldr-connection-warn></div>
+            </div>
+
+            <div class="skaldr-block">
+                <div class="skaldr-label" data-skaldr-i18n="settings.context">Context</div>
+                <div class="skaldr-toggles">
+                    <div class="skaldr-toggle" data-skaldr-toggle="usePreset" tabindex="0" role="button"
+                         data-skaldr-i18n-title="settings.presetHint">
+                        <i class="fa-solid fa-sliders"></i>
+                        <span data-skaldr-i18n="settings.usePreset">Preset</span>
+                    </div>
+                    <div class="skaldr-toggle" data-skaldr-toggle="usePersona" tabindex="0" role="button">
+                        <i class="fa-solid fa-user"></i>
+                        <span data-skaldr-i18n="settings.usePersona">Persona</span>
+                    </div>
+                    <div class="skaldr-toggle" data-skaldr-toggle="useCharacter" tabindex="0" role="button">
+                        <i class="fa-solid fa-masks-theater"></i>
+                        <span data-skaldr-i18n="settings.useCharacter">Bot</span>
+                    </div>
+                    <div class="skaldr-toggle" data-skaldr-toggle="useLorebook" tabindex="0" role="button">
+                        <i class="fa-solid fa-book"></i>
+                        <span data-skaldr-i18n="settings.useLorebook">Lorebook</span>
+                    </div>
+                    <div class="skaldr-toggle" data-skaldr-toggle="useChat" tabindex="0" role="button">
+                        <i class="fa-solid fa-comments"></i>
+                        <span data-skaldr-i18n="settings.useChat">Chat</span>
+                    </div>
+                </div>
+
+                <div class="skaldr-depth-row" data-skaldr-depth-row>
+                    <span class="skaldr-depth-label" data-skaldr-i18n="settings.chatDepth">Scan depth</span>
+                    <input type="number" class="skaldr-input skaldr-input-narrow" data-skaldr-chat-depth
+                           min="1" max="200" step="1">
+                </div>
+
+                <div class="skaldr-summary" data-skaldr-context-summary></div>
+                <div class="skaldr-hint" data-skaldr-i18n="settings.contextHint"></div>
+            </div>
+
+            <div class="skaldr-block">
+                <div class="skaldr-label" data-skaldr-i18n="settings.maxTokens">Max tokens</div>
+                <input type="number" class="skaldr-input" data-skaldr-max-tokens min="16" max="32768" step="16">
+                <div class="skaldr-hint" data-skaldr-i18n="settings.maxTokensHint"></div>
+            </div>
+
+            <div class="skaldr-block">
+                <label class="skaldr-check">
+                    <input type="checkbox" data-skaldr-auto-pull>
+                    <span data-skaldr-i18n="settings.autoPull">Auto pull</span>
+                </label>
+                <label class="skaldr-check">
+                    <input type="checkbox" data-skaldr-close-after-apply>
+                    <span data-skaldr-i18n="settings.closeAfterApply">Close after apply</span>
+                </label>
+            </div>
+
+            <div class="skaldr-block">
+                <div class="skaldr-label" data-skaldr-i18n="settings.language">Language</div>
+                <select class="skaldr-select" data-skaldr-language>
+                    <option value="auto" data-skaldr-i18n="settings.languageAuto">Auto</option>
+                    <option value="en">English</option>
+                    <option value="ru">Русский</option>
+                </select>
+                <div class="skaldr-hint" data-skaldr-i18n="settings.languageHint"></div>
+            </div>
+
+            <div class="skaldr-actions skaldr-actions-wrap">
+                <div class="skaldr-btn skaldr-btn-ghost" data-skaldr-action="reset-position" tabindex="0" role="button">
+                    <i class="fa-solid fa-crosshairs"></i>
+                    <span data-skaldr-i18n="settings.resetPos">Reset position</span>
+                </div>
+                <div class="skaldr-btn skaldr-btn-ghost" data-skaldr-action="toggle-settings" tabindex="0" role="button">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span data-skaldr-i18n="settings.back">Back</span>
+                </div>
+            </div>
+
+            <div class="skaldr-footer">SKALDR <span data-skaldr-version></span></div>
+        </div>
+    </div>
+</div>

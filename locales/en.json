@@ -1,0 +1,83 @@
+{
+    "launcher": {
+        "tooltip": "SKALDR — rewrite your text"
+    },
+    "panel": {
+        "settings": "Settings",
+        "close": "Close"
+    },
+    "main": {
+        "style": "Style",
+        "source": "Source text",
+        "sourcePlaceholder": "Text from the message box shows up here…",
+        "pull": "Pull text from the message box",
+        "result": "Rewritten",
+        "resultPlaceholder": "The rewritten text will appear here",
+        "copy": "Copy result",
+        "skal": "SKÁL!",
+        "stop": "Abort",
+        "rista": "RÍSTA!",
+        "ristaHint": "Replace the message box text with the rewritten one"
+    },
+    "style": {
+        "viking": {
+            "name": "Viking",
+            "desc": "Northern saga, harsh and terse"
+        },
+        "slav": {
+            "name": "Slav",
+            "desc": "Old Slavic, epic and archaic"
+        }
+    },
+    "settings": {
+        "connection": "Connection",
+        "connectionHint": "\"Current API\" uses whatever SillyTavern is connected to right now. You can also pick any saved connection profile — the active connection of the tavern stays untouched.",
+        "currentApi": "Current SillyTavern API",
+        "refresh": "Refresh profile list",
+        "cmDisabled": "Connection Manager is disabled, so there are no profiles to pick. Only the current API is available.",
+        "context": "Context",
+        "contextHint": "Whatever is switched on travels with the draft, so the style, names and details come out sharper. The more you switch on, the longer the request.",
+        "usePreset": "Preset",
+        "presetHint": "The text prompts of the preset currently selected in SillyTavern: its formatting, phrasing and tone. Any \"play the character\" instruction inside it is discarded.",
+        "usePersona": "Persona",
+        "useCharacter": "Bot",
+        "useLorebook": "Lorebook",
+        "useChat": "Chat",
+        "chatDepth": "Scan depth, messages",
+        "maxTokens": "Response token limit",
+        "maxTokensHint": "Maximum length of the rewritten text.",
+        "autoPull": "Pull text from the message box on open",
+        "closeAfterApply": "Close the window after RÍSTA!",
+        "language": "Extension language",
+        "languageAuto": "Automatic",
+        "languageHint": "\"Automatic\" follows the SillyTavern UI language.",
+        "resetPos": "Reset window position",
+        "back": "Back"
+    },
+    "status": {
+        "working": "The skald is composing… ({{style}})",
+        "done": "Done",
+        "applied": "Text written into the message box",
+        "aborted": "Aborted",
+        "error": "Error: {{msg}}",
+        "emptySource": "Source text is empty",
+        "emptyResult": "Nothing to apply — the result is empty",
+        "emptyResponse": "The model returned an empty response",
+        "noInput": "SillyTavern message box not found",
+        "pulled": "Text pulled from the message box",
+        "copied": "Copied to clipboard",
+        "copyFailed": "Copy failed, text is selected — copy it manually",
+        "profilesRefreshed": "Profile list refreshed",
+        "positionReset": "Window position reset"
+    },
+    "summary": {
+        "none": "none selected",
+        "noChat": "no chat open",
+        "noBooks": "no active books",
+        "presetEmpty": "preset has no text prompts"
+    },
+    "slash": {
+        "help": "Open the SKALDR window. If text is passed, it goes straight into the source box.",
+        "textArg": "text to rewrite"
+    }
+}
