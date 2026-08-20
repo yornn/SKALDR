@@ -22,6 +22,17 @@ const INPUT_SELECTOR = '#send_textarea';
  */
 const MOBILE_QUERY = '(max-width: 600px), (max-height: 520px) and (pointer: coarse)';
 
+/**
+ * Темы окна. Порядок здесь — порядок в настройках: сперва «как в таверне»,
+ * потом тёмные, потом светлые. Каждой соответствует блок [data-skaldr-theme]
+ * в style.css и строка в locales/*.json.
+ */
+const SKALDR_THEMES = [
+    'st', 'default', 'midnight', 'ember', 'blood', 'forest', 'stone', 'light', 'frost', 'parchment',
+];
+
+const DEFAULT_THEME = 'default';
+
 /** Куда вешать кнопку запуска — строго по приоритету, первый существующий. */
 const LAUNCHER_HOSTS = ['#leftSendForm', '#rightSendForm', '#send_form'];
 
@@ -162,6 +173,7 @@ async function injectLauncher() {
     });
 
     host.append(button);
+    applyTheme();
 }
 
 /* ------------------------------------------------------------------ */
@@ -204,11 +216,14 @@ async function buildPanel() {
     els.autoPull = panel.querySelector('[data-skaldr-auto-pull]');
     els.closeAfterApply = panel.querySelector('[data-skaldr-close-after-apply]');
     els.language = panel.querySelector('[data-skaldr-language]');
+    els.themes = panel.querySelector('[data-skaldr-themes]');
     els.version = panel.querySelector('[data-skaldr-version]');
 
     applyI18n(panel);
+    applyTheme();
     renderStyles();
     renderLengths();
+    renderThemes();
     renderSettingsView();
     bindPanelEvents(panel);
     bindViewport(panel);
@@ -260,6 +275,66 @@ function renderStyles() {
         });
 
         els.styles.append(card);
+    }
+}
+
+/**
+ * Вешает тему на окно и на кнопку у поля ввода. Кнопка живёт вне окна,
+ * в форме отправки таверны, и переменные окна до неё не достают.
+ */
+function applyTheme() {
+    const settings = getSettings();
+    const theme = SKALDR_THEMES.includes(settings.theme) ? settings.theme : DEFAULT_THEME;
+
+    state.panel?.setAttribute('data-skaldr-theme', theme);
+    document.getElementById(LAUNCHER_ID)?.setAttribute('data-skaldr-theme', theme);
+}
+
+/** Образцы тем: каждый несёт свою тему и потому красится собственной палитрой. */
+function renderThemes() {
+    if (!els.themes) return;
+
+    const current = getSettings().theme;
+    els.themes.innerHTML = '';
+
+    for (const theme of SKALDR_THEMES) {
+        const card = document.createElement('div');
+        card.className = 'skaldr-theme';
+        card.dataset.skaldrTheme = theme;
+        card.dataset.themeId = theme;
+        card.tabIndex = 0;
+        card.setAttribute('role', 'button');
+        card.classList.toggle('selected', theme === current);
+
+        const dot = document.createElement('span');
+        dot.className = 'skaldr-theme-dot';
+
+        const name = document.createElement('span');
+        name.className = 'skaldr-theme-name';
+        name.textContent = t(`theme.${theme}`);
+        card.title = name.textContent;
+
+        card.append(dot, name);
+
+        const select = () => selectTheme(theme);
+        card.addEventListener('click', select);
+        card.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                select();
+            }
+        });
+
+        els.themes.append(card);
+    }
+}
+
+/** @param {string} theme */
+function selectTheme(theme) {
+    setSetting('theme', theme);
+    applyTheme();
+    for (const card of els.themes.querySelectorAll('.skaldr-theme')) {
+        card.classList.toggle('selected', card.dataset.themeId === theme);
     }
 }
 
@@ -554,6 +629,7 @@ function bindPanelEvents(panel) {
         applyI18n(panel);
         renderStyles();
         renderLengths();
+        renderThemes();
         renderSettingsView();
         setBusy(state.busy);
         const launcher = document.getElementById(LAUNCHER_ID);

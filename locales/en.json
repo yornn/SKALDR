@@ -39,6 +39,18 @@
         "medium": "Medium",
         "long": "Long"
     },
+    "theme": {
+        "st": "Follow SillyTavern",
+        "default": "Default (dark)",
+        "midnight": "Midnight",
+        "ember": "Ember",
+        "blood": "Blood and iron",
+        "forest": "Deep woods",
+        "stone": "Grey stone",
+        "light": "Light",
+        "frost": "Hoarfrost",
+        "parchment": "Parchment"
+    },
     "settings": {
         "connection": "Connection",
         "connectionHint": "\"Current API\" uses whatever SillyTavern is connected to right now. You can also pick any saved connection profile — the active connection of the tavern stays untouched.",
@@ -62,7 +74,9 @@
         "languageAuto": "Automatic",
         "languageHint": "\"Automatic\" follows the SillyTavern UI language.",
         "resetPos": "Reset window position",
-        "back": "Back"
+        "back": "Back",
+        "theme": "Theme",
+        "themeHint": "Window colours. \"Follow SillyTavern\" takes them from the current SillyTavern theme."
     },
     "status": {
         "working": "The skald is composing… ({{style}})",

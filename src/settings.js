@@ -37,6 +37,8 @@ export const defaultSettings = Object.freeze({
     panelPos: null,
     /** язык интерфейса расширения: 'auto' | 'en' | 'ru' */
     language: 'auto',
+    /** цветовая тема окна; 'st' = брать цвета у SillyTavern */
+    theme: 'default',
 });
 
 /**
