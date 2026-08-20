@@ -239,6 +239,64 @@
     line-height: 1.25;
 }
 
+/* --- выбор длины --- */
+
+.skaldr-lengths {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+    gap: 6px;
+}
+
+.skaldr-length {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: center;
+    padding: 6px 8px;
+    cursor: pointer;
+    text-align: center;
+    border: 1px solid var(--skaldr-border);
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.03);
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.skaldr-length:hover,
+.skaldr-length:focus-visible {
+    border-color: var(--skaldr-gold);
+    outline: none;
+}
+
+.skaldr-length.selected {
+    border-color: var(--skaldr-gold);
+    background-color: rgba(201, 162, 39, 0.15);
+    box-shadow: inset 0 0 0 1px rgba(201, 162, 39, 0.35);
+}
+
+.skaldr-length-name {
+    font-weight: 600;
+    font-size: 0.88em;
+    line-height: 1.2;
+}
+
+.skaldr-length-desc {
+    font-size: 0.72em;
+    opacity: 0.65;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.skaldr-length-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.skaldr-length-unit {
+    font-size: 0.85em;
+    opacity: 0.7;
+}
+
 /* --- поля --- */
 
 .skaldr-textarea,
@@ -471,19 +529,112 @@
 
 /* --- мобильные --- */
 
-@media (max-width: 600px) {
+/*
+ * На телефоне окно разворачивается на весь экран: содержимого много, а любой
+ * компромисс вроде «шторка на 88vh» ломается экранной клавиатурой. Высоту и
+ * верх берём из visual viewport (переменные проставляет ui.js), потому что
+ * layout viewport при открытой клавиатуре не меняется — и окно с bottom: 0
+ * уезжает ровно под неё.
+ */
+@media (max-width: 600px), (max-height: 520px) and (pointer: coarse) {
     .skaldr-panel {
-        top: auto !important;
+        top: var(--skaldr-vv-top, 0px) !important;
         right: 0 !important;
-        bottom: 0 !important;
+        bottom: auto !important;
         left: 0 !important;
-        width: 100% !important;
-        max-height: 88vh;
-        resize: none;
-        border-radius: var(--skaldr-radius) var(--skaldr-radius) 0 0;
+        width: auto !important;
+        max-width: none !important;
+        /* Три ступени: старые движки без dvh, dvh, точная высота от ui.js.
+           !important — чтобы перебить инлайновый height от resize на десктопе. */
+        height: 100vh !important;
+        height: 100dvh !important;
+        height: var(--skaldr-vv-height, 100dvh) !important;
+        max-height: none !important;
+        resize: none !important;
+        /* Выше мобильных панелей таверны, иначе окно открывается под ними. */
+        z-index: 9000;
+        border-width: 0;
+        border-radius: 0;
+        box-shadow: none;
     }
 
     .skaldr-header {
         cursor: default;
+        /* Перетаскивать нечего, а touch-action: none съедал бы скролл. */
+        touch-action: auto;
+        padding: 10px 12px;
+    }
+
+    .skaldr-icon-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1em;
+    }
+
+    .skaldr-mini-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 1em;
+    }
+
+    .skaldr-body {
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .skaldr-view {
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* 16px — иначе iOS зумит страницу при фокусе в поле и всё разъезжается. */
+    .skaldr-textarea,
+    .skaldr-input,
+    .skaldr-select {
+        font-size: 16px;
+    }
+
+    .skaldr-textarea {
+        min-height: 72px;
+    }
+
+    .skaldr-input-narrow {
+        width: 4.5em;
+    }
+
+    .skaldr-btn {
+        min-height: 44px;
+    }
+
+    .skaldr-style {
+        padding: 10px;
+    }
+
+    /* auto-fit на узком экране раскладывает четыре карточки как 3+1 — некрасиво
+       и мелко для пальца. Жёсткие две колонки дают ровный квадрат 2x2. */
+    .skaldr-lengths {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .skaldr-length {
+        padding: 8px;
+    }
+
+    .skaldr-toggle {
+        padding: 8px 12px;
+        font-size: 0.9em;
+    }
+
+    .skaldr-check {
+        padding: 4px 0;
+        font-size: 1em;
+    }
+
+    /* Окно на весь экран — двигать его некуда. */
+    .skaldr-desktop-only {
+        display: none !important;
+    }
+
+    .skaldr-launcher {
+        padding: 4px 6px;
     }
 }

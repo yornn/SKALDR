@@ -5,7 +5,12 @@
  *   1. пресет таверны   — как пишет автор пресета (если тумблер включён);
  *   2. prompts/base.md  — общие правила переписывания, одинаковые для всех стилей;
  *   3. prompts/<стиль>.md — голос выбранного стиля;
- *   4. блок контекста   — персона, карточка, лорбук, чат (по тумблерам).
+ *   4. блок контекста   — персона, карточка, лорбук, чат (по тумблерам);
+ *   5. prompts/length*.md — целевая длина результата.
+ *
+ * Длина идёт последней намеренно: это единственное указание с числами, и с ним
+ * заметно лучше, когда модель читает его прямо перед черновиком, а не за
+ * километром справочного контекста.
  *
  * Черновик пользователя уходит отдельным user-сообщением, как есть.
  *
@@ -26,6 +31,12 @@ const PRESET_NOTE_FILE = 'prompts/preset-note.md';
 
 /** Шапка справочного блока с контекстом. */
 const CONTEXT_NOTE_FILE = 'prompts/context-note.md';
+
+/** Слой длины: заданная пользователем цель в словах. */
+const LENGTH_FILE = 'prompts/length.md';
+
+/** Слой длины для режима «как в черновике» (targetWords = 0). */
+const LENGTH_AUTO_FILE = 'prompts/length-auto.md';
 
 /** Разделитель между слоями системного промпта. */
 const LAYER_SEPARATOR = '\n\n---\n\n';
@@ -58,6 +69,27 @@ export const SKALD_STYLES = [
 ];
 
 /**
+ * @typedef {object} LengthPreset
+ * @property {string} id      технический id
+ * @property {string} nameKey ключ i18n для названия
+ * @property {number} words   что подставляем в поле при выборе (0 = авто)
+ * @property {number} [min]   нижняя граница коридора, слов
+ * @property {number} [max]   верхняя граница коридора, слов
+ */
+
+/**
+ * Готовые длины. Коридор min–max уходит в промпт как есть, поэтому «коротко»
+ * это буквально 40–70 слов, а не «примерно 55 ± сколько-то».
+ * @type {LengthPreset[]}
+ */
+export const LENGTH_PRESETS = [
+    { id: 'auto', nameKey: 'length.auto', words: 0 },
+    { id: 'short', nameKey: 'length.short', words: 55, min: 40, max: 70 },
+    { id: 'medium', nameKey: 'length.medium', words: 200, min: 150, max: 250 },
+    { id: 'long', nameKey: 'length.long', words: 400, min: 350, max: 450 },
+];
+
+/**
  * Аварийный промпт на случай, если файлы не подгрузились: цепочка должна
  * остаться рабочей, пусть и без тонкой настройки.
  */
@@ -73,6 +105,8 @@ const cache = {
     base: '',
     presetNote: '',
     contextNote: '',
+    length: '',
+    lengthAuto: '',
     styles: /** @type {Record<string, string>} */ ({}),
     loaded: false,
 };
@@ -94,16 +128,20 @@ async function loadPromptFile(relativePath) {
 
 /** Загружает все слои промптов. Вызывать один раз при старте. */
 export async function initPrompts() {
-    const [base, presetNote, contextNote, ...styleTexts] = await Promise.all([
+    const [base, presetNote, contextNote, length, lengthAuto, ...styleTexts] = await Promise.all([
         loadPromptFile(BASE_PROMPT_FILE),
         loadPromptFile(PRESET_NOTE_FILE),
         loadPromptFile(CONTEXT_NOTE_FILE),
+        loadPromptFile(LENGTH_FILE),
+        loadPromptFile(LENGTH_AUTO_FILE),
         ...SKALD_STYLES.map(style => loadPromptFile(style.promptFile)),
     ]);
 
     cache.base = base || FALLBACK_BASE;
     cache.presetNote = presetNote;
     cache.contextNote = contextNote;
+    cache.length = length;
+    cache.lengthAuto = lengthAuto;
     SKALD_STYLES.forEach((style, index) => {
         cache.styles[style.id] = styleTexts[index] ?? '';
     });
@@ -118,6 +156,75 @@ export async function initPrompts() {
  */
 export function getStyle(styleId) {
     return SKALD_STYLES.find(style => style.id === styleId) ?? SKALD_STYLES[0];
+}
+
+/**
+ * Считает слова так же грубо, как это сделает человек: последовательности
+ * букв и цифр. Разметка (*звёздочки*, тире, кавычки) в счёт не идёт.
+ * @param {string} text
+ * @returns {number}
+ */
+export function countWords(text) {
+    return String(text ?? '').match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu)?.length ?? 0;
+}
+
+/**
+ * План по длине для текущих настроек.
+ * @param {number} draftWords сколько слов в черновике
+ * @returns {{ target: number, min: number, max: number, paragraphs: number, draftWords: number }|null}
+ *          null — режим «как в черновике»
+ */
+export function getLengthPlan(draftWords = 0) {
+    const target = Math.max(0, Math.round(Number(getSettings().targetWords) || 0));
+    if (!target) return null;
+
+    // Попали в готовый пресет — берём его коридор, иначе ±20% вокруг цели.
+    const preset = LENGTH_PRESETS.find(item => item.min && target >= item.min && target <= item.max);
+
+    return {
+        target,
+        min: preset?.min ?? Math.round(target * 0.8),
+        max: preset?.max ?? Math.round(target * 1.2),
+        paragraphs: Math.max(1, Math.min(8, Math.round(target / 80))),
+        draftWords,
+    };
+}
+
+/**
+ * Сколько токенов ответа стоит выдать под такую длину. Русский текст тяжелее
+ * английского, поэтому запас щедрый: обрезанный на полуслове пост хуже,
+ * чем неиспользованный лимит.
+ * @param {ReturnType<typeof getLengthPlan>} plan
+ * @returns {number} 0, если ограничение не нужно
+ */
+export function recommendedTokens(plan) {
+    if (!plan) return 0;
+    return Math.ceil((plan.max * 2.5) / 100) * 100;
+}
+
+/**
+ * Слой длины: подставляет числа в prompts/length*.md.
+ * Плейсхолдеры закрываются здесь, до substituteMacros, иначе таверна
+ * попробует разобрать их как свои макросы.
+ * @param {string} draftText
+ * @returns {string}
+ */
+function buildLengthLayer(draftText) {
+    const draftWords = countWords(draftText);
+    const plan = getLengthPlan(draftWords);
+    const template = plan ? cache.length : cache.lengthAuto;
+    if (!template) return '';
+
+    const values = {
+        skaldr_draft_words: draftWords,
+        skaldr_target: plan?.target ?? '',
+        skaldr_min: plan?.min ?? '',
+        skaldr_max: plan?.max ?? '',
+        skaldr_paragraphs: plan?.paragraphs ?? '',
+    };
+
+    return template.replace(/\{\{(skaldr_\w+)\}\}/g, (whole, key) =>
+        (Object.hasOwn(values, key) ? String(values[key]) : whole));
 }
 
 /**
@@ -179,6 +286,7 @@ export async function buildSystemPrompt(styleId, draftText = '') {
         cache.base || FALLBACK_BASE,
         cache.styles[style.id],
         await buildContextLayer(draftText),
+        buildLengthLayer(draftText),
     ]
         .map(layer => String(layer ?? '').trim())
         .filter(Boolean);

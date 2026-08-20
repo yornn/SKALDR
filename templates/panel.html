@@ -24,6 +24,17 @@
                 <div class="skaldr-styles" data-skaldr-styles></div>
             </div>
 
+            <div class="skaldr-block">
+                <div class="skaldr-label" data-skaldr-i18n="main.length">Length</div>
+                <div class="skaldr-lengths" data-skaldr-lengths></div>
+                <div class="skaldr-length-row">
+                    <input type="number" class="skaldr-input skaldr-input-narrow" data-skaldr-target-words
+                           min="0" max="2000" step="10">
+                    <span class="skaldr-length-unit" data-skaldr-i18n="main.words">words</span>
+                </div>
+                <div class="skaldr-warn skaldr-hidden" data-skaldr-tokens-warn></div>
+            </div>
+
             <div class="skaldr-block skaldr-grow">
                 <div class="skaldr-label-row">
                     <span class="skaldr-label" data-skaldr-i18n="main.source">Source</span>
@@ -145,7 +156,7 @@
             </div>
 
             <div class="skaldr-actions skaldr-actions-wrap">
-                <div class="skaldr-btn skaldr-btn-ghost" data-skaldr-action="reset-position" tabindex="0" role="button">
+                <div class="skaldr-btn skaldr-btn-ghost skaldr-desktop-only" data-skaldr-action="reset-position" tabindex="0" role="button">
                     <i class="fa-solid fa-crosshairs"></i>
                     <span data-skaldr-i18n="settings.resetPos">Reset position</span>
                 </div>

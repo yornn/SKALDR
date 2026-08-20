@@ -17,7 +17,10 @@
         "skal": "SKÁL!",
         "stop": "Abort",
         "rista": "RÍSTA!",
-        "ristaHint": "Replace the message box text with the rewritten one"
+        "ristaHint": "Replace the message box text with the rewritten one",
+        "length": "Length",
+        "words": "words",
+        "tokensWarn": "A token limit of {{tokens}} is tight for {{words}} words — raise it to ~{{suggest}} in settings or the answer will be cut off."
     },
     "style": {
         "viking": {
@@ -28,6 +31,13 @@
             "name": "Slav",
             "desc": "Old Slavic, epic and archaic"
         }
+    },
+    "length": {
+        "auto": "As is",
+        "autoDesc": "follow the draft",
+        "short": "Short",
+        "medium": "Medium",
+        "long": "Long"
     },
     "settings": {
         "connection": "Connection",

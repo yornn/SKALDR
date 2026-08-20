@@ -15,6 +15,8 @@ export const defaultSettings = Object.freeze({
     connectionProfile: CURRENT_API,
     /** лимит токенов ответа */
     maxTokens: 1024,
+    /** желаемая длина результата в словах; 0 = держаться длины черновика */
+    targetWords: 200,
     /** подмешивать текстовые промпты текущего пресета таверны */
     usePreset: false,
     /** подмешивать имя и описание выбранной персоны */

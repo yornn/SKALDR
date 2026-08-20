@@ -5,13 +5,22 @@
 import { assetUrl, LOG_PREFIX, VERSION, ctx } from './constants.js';
 import { getSettings, saveSettings, setSetting, CURRENT_API } from './settings.js';
 import { t, applyI18n, initI18n } from './i18n.js';
-import { SKALD_STYLES, getStyle, buildMessages, cleanResult } from './prompts.js';
+import {
+    SKALD_STYLES, LENGTH_PRESETS, getStyle, buildMessages, cleanResult,
+    getLengthPlan, recommendedTokens,
+} from './prompts.js';
 import { getContextSummary } from './context.js';
 import { getGroupedProfiles, isConnectionManagerAvailable, getProfile, requestRewrite, usesCurrentApi } from './connection.js';
 
 const LAUNCHER_ID = 'skaldr_launcher';
 const PANEL_ID = 'skaldr_panel';
 const INPUT_SELECTOR = '#send_textarea';
+
+/**
+ * Когда окно превращается в шторку на весь экран. Должно совпадать с медиа-запросом
+ * в style.css: телефон в портрете плюс низкий экран с тач-вводом (телефон в ландшафте).
+ */
+const MOBILE_QUERY = '(max-width: 600px), (max-height: 520px) and (pointer: coarse)';
 
 /** Куда вешать кнопку запуска — строго по приоритету, первый существующий. */
 const LAUNCHER_HOSTS = ['#leftSendForm', '#rightSendForm', '#send_form'];
@@ -56,6 +65,11 @@ function waitForElement(selector, timeoutMs = 20000) {
 
         observer.observe(document.body, { childList: true, subtree: true });
     });
+}
+
+/** @returns {boolean} раскладка «шторка на весь экран» */
+function isMobileLayout() {
+    return globalThis.matchMedia?.(MOBILE_QUERY)?.matches ?? false;
 }
 
 /** @returns {HTMLTextAreaElement|null} поле ввода сообщения таверны */
@@ -172,6 +186,9 @@ async function buildPanel() {
     els.viewMain = panel.querySelector('[data-skaldr-view="main"]');
     els.viewSettings = panel.querySelector('[data-skaldr-view="settings"]');
     els.styles = panel.querySelector('[data-skaldr-styles]');
+    els.lengths = panel.querySelector('[data-skaldr-lengths]');
+    els.targetWords = panel.querySelector('[data-skaldr-target-words]');
+    els.tokensWarn = panel.querySelector('[data-skaldr-tokens-warn]');
     els.source = panel.querySelector('[data-skaldr-source]');
     els.result = panel.querySelector('[data-skaldr-result]');
     els.status = panel.querySelector('[data-skaldr-status]');
@@ -191,8 +208,10 @@ async function buildPanel() {
 
     applyI18n(panel);
     renderStyles();
+    renderLengths();
     renderSettingsView();
     bindPanelEvents(panel);
+    bindViewport(panel);
     makeDraggable(panel);
 
     if (els.version) els.version.textContent = `v${VERSION}`;
@@ -241,6 +260,82 @@ function renderStyles() {
         });
 
         els.styles.append(card);
+    }
+}
+
+/**
+ * Карточки готовых длин плюс поле с точным числом. Подпись коридора берём
+ * из самого пресета, чтобы «40–70 слов» не разъезжалось с тем, что уходит в промпт.
+ */
+function renderLengths() {
+    const current = Math.max(0, Math.round(Number(getSettings().targetWords) || 0));
+
+    if (els.targetWords) els.targetWords.value = String(current);
+    renderTokensWarn();
+
+    if (!els.lengths) return;
+    els.lengths.innerHTML = '';
+
+    for (const preset of LENGTH_PRESETS) {
+        const card = document.createElement('div');
+        card.className = 'skaldr-length';
+        card.dataset.lengthId = preset.id;
+        card.tabIndex = 0;
+        card.setAttribute('role', 'button');
+        card.classList.toggle('selected', preset.min
+            ? current >= preset.min && current <= preset.max
+            : current === 0);
+
+        const name = document.createElement('div');
+        name.className = 'skaldr-length-name';
+        name.textContent = t(preset.nameKey);
+
+        const desc = document.createElement('div');
+        desc.className = 'skaldr-length-desc';
+        desc.textContent = preset.min
+            ? `${preset.min}–${preset.max} ${t('main.words')}`
+            : t('length.autoDesc');
+
+        card.append(name, desc);
+
+        const select = () => selectLength(preset.words);
+        card.addEventListener('click', select);
+        card.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                select();
+            }
+        });
+
+        els.lengths.append(card);
+    }
+}
+
+/** @param {number} words 0 — «как в черновике» */
+function selectLength(words) {
+    setSetting('targetWords', words);
+    renderLengths();
+}
+
+/**
+ * Предупреждает, что лимит токенов не вытянет заказанную длину: русский текст
+ * тяжелее английского, и на 400 словах дефолтной тысячи уже не хватает.
+ */
+function renderTokensWarn() {
+    if (!els.tokensWarn) return;
+
+    const settings = getSettings();
+    const plan = getLengthPlan(0);
+    const suggest = recommendedTokens(plan);
+    const tight = Boolean(plan) && suggest > Number(settings.maxTokens);
+
+    els.tokensWarn.classList.toggle('skaldr-hidden', !tight);
+    if (tight) {
+        els.tokensWarn.textContent = t('main.tokensWarn', {
+            tokens: settings.maxTokens,
+            words: plan.max,
+            suggest,
+        });
     }
 }
 
@@ -441,6 +536,13 @@ function bindPanelEvents(panel) {
         const value = Math.max(16, Math.min(32768, Number(els.maxTokens.value) || 1024));
         els.maxTokens.value = String(value);
         setSetting('maxTokens', value);
+        renderTokensWarn();
+    });
+
+    els.targetWords?.addEventListener('change', () => {
+        const value = Math.max(0, Math.min(2000, Math.round(Number(els.targetWords.value) || 0)));
+        setSetting('targetWords', value);
+        renderLengths();
     });
 
     els.autoPull?.addEventListener('change', () => setSetting('autoPull', els.autoPull.checked));
@@ -451,6 +553,7 @@ function bindPanelEvents(panel) {
         await initI18n();
         applyI18n(panel);
         renderStyles();
+        renderLengths();
         renderSettingsView();
         setBusy(state.busy);
         const launcher = document.getElementById(LAUNCHER_ID);
@@ -478,8 +581,6 @@ function bindPanelEvents(panel) {
             if (eventName) context.eventSource.on(eventName, refreshSummaryIfVisible);
         }
     }
-
-    window.addEventListener('resize', () => clampIntoViewport(panel));
 }
 
 /**
@@ -535,6 +636,8 @@ function makeDraggable(panel) {
     let dragging = false;
 
     handle.addEventListener('pointerdown', event => {
+        // Шторка занимает весь экран — таскать нечего, а перехват жеста мешает скроллу.
+        if (isMobileLayout()) return;
         if (event.target.closest('[data-skaldr-action]')) return;
         if (event.button !== 0 && event.pointerType === 'mouse') return;
 
@@ -596,6 +699,74 @@ function clampIntoViewport(panel) {
     setPosition(panel, rect.left, rect.top);
 }
 
+/**
+ * Прокидывает в CSS размеры визуального вьюпорта.
+ *
+ * Экранная клавиатура ужимает именно визуальный вьюпорт, layout viewport при этом
+ * не меняется — поэтому окно, прижатое к bottom: 0, целиком уезжает под клавиатуру.
+ * Шторка вместо этого встаёт по --skaldr-vv-top/--skaldr-vv-height и всегда видна.
+ * @param {HTMLElement} panel
+ */
+function syncViewportVars(panel) {
+    const viewport = globalThis.visualViewport;
+    const height = Math.round(viewport?.height || window.innerHeight || 0);
+    const top = Math.round(viewport?.offsetTop || 0);
+
+    // Нулевую высоту записывать нельзя: шторка схлопнется и снова станет невидимой.
+    // Лучше убрать переменную и отдать высоту запасному 100dvh из CSS.
+    if (height > 0) panel.style.setProperty('--skaldr-vv-height', `${height}px`);
+    else panel.style.removeProperty('--skaldr-vv-height');
+
+    panel.style.setProperty('--skaldr-vv-top', `${Math.max(0, top)}px`);
+}
+
+/**
+ * Выбирает раскладку: плавающее окно на десктопе, шторка на телефоне.
+ * @param {HTMLElement} panel
+ */
+function applyLayout(panel) {
+    if (!isMobileLayout()) {
+        restorePosition(panel);
+        return;
+    }
+
+    // Инлайновые координаты от перетаскивания (и размеры от resize) на телефоне
+    // только мешают: шторку раскладывает CSS.
+    for (const prop of ['left', 'top', 'right', 'bottom', 'width', 'height']) {
+        panel.style.removeProperty(prop);
+    }
+    syncViewportVars(panel);
+}
+
+/** @param {HTMLElement} panel */
+function bindViewport(panel) {
+    const onViewportChange = () => {
+        if (panel.classList.contains('skaldr-hidden')) return;
+        if (isMobileLayout()) syncViewportVars(panel);
+        else clampIntoViewport(panel);
+    };
+
+    window.addEventListener('resize', onViewportChange);
+
+    // Клавиатура и зум двигают только визуальный вьюпорт — window.resize их не ловит.
+    const viewport = globalThis.visualViewport;
+    viewport?.addEventListener('resize', onViewportChange);
+    viewport?.addEventListener('scroll', onViewportChange);
+
+    // Поворот экрана или смена окна браузера — раскладку меняем целиком.
+    globalThis.matchMedia?.(MOBILE_QUERY)?.addEventListener?.('change', () => {
+        if (!panel.classList.contains('skaldr-hidden')) applyLayout(panel);
+    });
+
+    // С открытой клавиатурой поле легко оказывается за краем шторки.
+    panel.addEventListener('focusin', event => {
+        if (!isMobileLayout()) return;
+        const field = event.target.closest?.('textarea, input, select');
+        if (!field) return;
+        setTimeout(() => field.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 300);
+    });
+}
+
 /** @param {HTMLElement} panel */
 function restorePosition(panel) {
     const saved = getSettings().panelPos;
@@ -621,7 +792,7 @@ function restorePosition(panel) {
 
 function resetPosition() {
     setSetting('panelPos', null);
-    if (state.panel) restorePosition(state.panel);
+    if (state.panel) applyLayout(state.panel);
     setStatus(t('status.positionReset'), 'ok');
 }
 
@@ -755,7 +926,7 @@ export async function openPanel(presetText) {
     const panel = await buildPanel();
 
     panel.classList.remove('skaldr-hidden');
-    restorePosition(panel);
+    applyLayout(panel);
 
     if (typeof presetText === 'string' && presetText.length) {
         els.source.value = presetText;
@@ -763,7 +934,9 @@ export async function openPanel(presetText) {
         pullFromInput(false);
     }
 
-    els.source?.focus();
+    // На телефоне фокус сразу поднимает клавиатуру поверх половины шторки —
+    // пусть пользователь сначала увидит окно и тапнет в поле сам.
+    if (!isMobileLayout()) els.source?.focus();
 }
 
 export function closePanel() {
